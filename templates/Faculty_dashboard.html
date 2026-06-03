@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartAttendance | Faculty Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #fcfdfe;
+            color: #1e293b;
+        }
+
+        .sidebar-item {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .sidebar-item.active {
+            background-color: #eef2ff;
+            color: #4f46e5;
+            border-right: 4px solid #4f46e5;
+        }
+
+        .logo-box {
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.3);
+        }
+
+        .glass-card {
+            background: white;
+            border-radius: 2.5rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.02);
+            border: 1px solid #f1f5f9;
+        }
+
+        .stat-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.03);
+        }
+
+        .clock-widget {
+            background: #2563eb;
+            color: white;
+            padding: 1.5rem 2rem;
+            border-radius: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            box-shadow: 0 15px 30px rgba(37, 99, 235, 0.2);
+        }
+
+        .status-badge {
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .status-absent {
+            background-color: #fff1f2;
+            color: #e11d48;
+            border: none;
+            outline: none;
+        }
+
+        .status-present {
+            background-color: #f0fdf4;
+            color: #16a34a;
+            border: none;
+            outline: none;
+        }
+
+        .scan-area {
+            background-color: #ffffff;
+            border-radius: 2rem;
+            aspect-ratio: 16/9;
+            overflow: hidden;
+            border: 2px dashed #2563eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .scan-area::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #2563eb;
+            top: 0;
+            left: 0;
+            animation: scanLine 2s linear infinite;
+        }
+
+        @keyframes scanLine {
+            0% {
+                top: 0;
+            }
+            100% {
+                top: 100%;
+            }
+        }
+
+        .calendar-day {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .calendar-day.active {
+            background: #2563eb;
+            color: white;
+            box-shadow: 0 8px 15px rgba(37, 99, 235, 0.3);
+        }
+
+        .calendar-day.other-month {
+            color: #cbd5e1;
+        }
+
+        .progress-circle {
+            position: relative;
+            width: 140px;
+            height: 140px;
+        }
+
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring circle {
+            fill: transparent;
+            stroke-width: 10;
+        }
+
+        .progress-ring .bg {
+            stroke: rgba(255, 255, 255, 0.3);
+        }
+
+        .progress-ring .progress {
+            stroke: white;
+            stroke-linecap: round;
+            stroke-dasharray: 377;
+            stroke-dashoffset: 377;
+            transition: stroke-dashoffset 1s ease;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+        }
+
+        .progress-text span {
+            font-size: 24px;
+            font-weight: 900;
+        }
+
+        .progress-text p {
+            font-size: 10px;
+            font-weight: 700;
+            opacity: 0.8;
+        }
+
+        .image-box {
+            width: 100%;
+            height: 100%;
+            border-radius: 2rem;
+            overflow: hidden;
+            border: 3px solid transparent;
+            transition: 0.4s ease;
+        }
+
+        .image-success {
+            border: 4px solid #22c55e;
+            box-shadow: 0 0 25px rgba(34, 197, 94, 0.4);
+        }
+
+        .calendar-day.selected {
+            background: #e0e7ff;
+            color: #4f46e5;
+        }
+
+        .scan-area.scan-stopped::after {
+            animation: none !important;
+            opacity: 0;
+        }
+    </style>
+</head>
+
+<body class="flex min-h-screen">
+
+    <aside class="w-72 bg-white border-r border-slate-100 flex flex-col py-8 sticky top-0 h-screen">
+        <div class="px-8 flex items-center gap-3 mb-16">
+            <div class="logo-box w-12 h-12 bg-indigo-600 p-2.5 rounded-2xl flex items-center justify-center">
+                <i class="fas fa-graduation-cap text-white text-2xl"></i>
+            </div>
+            <h1 class="text-2xl font-black tracking-tighter text-slate-800">SmartAttendance</h1>
+        </div>
+
+        <nav class="flex-1 space-y-2 px-4">
+            <div onclick="switchView('dashboard')" id="nav-dashboard" class="sidebar-item active p-4 rounded-2xl flex items-center gap-4 font-bold text-slate-400">
+                <i class="fas fa-grid-2"></i> Dashboard
+            </div>
+            <div onclick="switchView('students')" id="nav-students" class="sidebar-item p-4 rounded-2xl flex items-center gap-4 font-bold text-slate-400">
+                <i class="fas fa-user-friends"></i> My Students
+            </div>
+            <div onclick="switchView('console')" id="nav-console" class="sidebar-item p-4 rounded-2xl flex items-center gap-4 font-bold text-slate-400">
+                <i class="fas fa-clipboard-check"></i> Mark Attendance
+            </div>
+            <div onclick="switchView('reports')" id="nav-reports" class="sidebar-item p-4 rounded-2xl flex items-center gap-4 font-bold text-slate-400">
+                <i class="fas fa-chart-pie"></i> Reports
+            </div>
+        </nav>
+
+        <div class="px-8 mt-auto pt-8">
+            <button onclick="logout()" class="text-rose-500 font-bold flex items-center gap-3 hover:gap-4 transition-all">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-12 overflow-y-auto">
+
+        <!-- ======================== DASHBOARD VIEW ======================== -->
+        <div id="view-dashboard">
+            <header class="flex justify-between items-start mb-12">
+                <div>
+                    <h2 class="text-5xl font-black text-slate-800 tracking-tighter mb-2">Faculty Dashboard</h2>
+                    <!-- FIX: id="greeting-text" is populated by fetchFacultyName() on load -->
+                    <p id="greeting-text" class="text-slate-400 font-semibold text-sm">Welcome back</p>
+                </div>
+                <div class="clock-widget">
+                    <div class="text-right">
+                        <p id="live-date" class="text-[10px] font-black uppercase tracking-widest opacity-70"></p>
+                        <p id="live-clock" class="text-3xl font-black tabular-nums">00:00:00</p>
+                    </div>
+                    <div class="bg-white/20 p-3 rounded-2xl"><i class="fas fa-clock text-xl"></i></div>
+                </div>
+            </header>
+
+            <div class="glass-card p-8 mt-8">
+                <h3 class="text-xl font-black mb-6">Select Course & Subjects</h3>
+                <div class="flex gap-6 mb-6">
+                    <label class="flex items-center gap-2 font-bold">
+                        <input type="radio" name="course" value="B.E" onchange="autoloadSubjects()"> B.E
+                    </label>
+                    <label class="flex items-center gap-2 font-bold">
+                        <input type="radio" name="course" value="BTECH" onchange="autoloadSubjects()"> B.Tech
+                    </label>
+                </div>
+                <div class="flex gap-6 mb-6">
+                    <select id="year" onchange="autoloadSubjects()" class="px-4 py-2 rounded-xl border">
+                        <option value="">Select Year</option>
+                        <option value="1">1st Year</option>
+                        <option value="2">2nd Year</option>
+                        <option value="3">3rd Year</option>
+                        <option value="4">4th Year</option>
+                    </select>
+                    <select id="semester" onchange="autoloadSubjects()" class="px-4 py-2 rounded-xl border">
+                        <option value="">Select Semester</option>
+                        <option value="1">Sem 1</option>
+                        <option value="2">Sem 2</option>
+                        <option value="3">Sem 3</option>
+                        <option value="4">Sem 4</option>
+                        <option value="5">Sem 5</option>
+                        <option value="6">Sem 6</option>
+                        <option value="7">Sem 7</option>
+                        <option value="8">Sem 8</option>
+                    </select>
+                    <select id="day" onchange="autoloadSubjects()" class="px-4 py-2 rounded-xl border">
+                        <option value="">Select Day</option>
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                    </select>
+                </div>
+                <div id="subject-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+
+            <div class="grid grid-cols-12 gap-8 mt-8">
+                <div class="col-span-12 lg:col-span-4 glass-card p-8">
+                    <div class="flex justify-between items-start mb-10">
+                        <div class="bg-indigo-50 p-3 rounded-xl text-indigo-600"><i class="fas fa-book-open"></i></div>
+                        <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Today's Class</span>
+                    </div>
+                    <h3 class="text-3xl font-black text-slate-800 mb-1">Advanced AI</h3>
+                    <p class="text-slate-400 font-bold text-xs uppercase mb-8">CS-402 • 02:00 PM</p>
+                    <button onclick="switchView('console')" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black">
+                        Mark Attendance
+                    </button>
+                </div>
+                <div class="col-span-12 lg:col-span-4 glass-card p-8">
+                    <div class="flex justify-between items-start mb-10">
+                        <div class="bg-indigo-50 p-3 rounded-xl text-indigo-600"><i class="fas fa-user-check"></i></div>
+                        <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Overall Presence</span>
+                    </div>
+                    <h3 class="text-5xl font-black text-slate-800">92%</h3>
+                    <p class="text-slate-400 font-bold text-[10px] uppercase mt-2 tracking-widest">Student Engagement</p>
+                    <div class="w-full bg-slate-100 h-2 rounded-full mt-6 overflow-hidden">
+                        <div class="bg-indigo-500 h-full w-[92%]"></div>
+                    </div>
+                </div>
+                <div class="col-span-12 lg:col-span-4 glass-card p-8">
+                    <div class="flex justify-between items-center mb-6 px-2">
+                        <h4 class="font-black text-slate-800 tracking-tight">Schedule</h4>
+                        <div class="flex gap-2">
+                            <button class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 text-xs hover:text-indigo-600"><i class="fas fa-chevron-left"></i></button>
+                            <button class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 text-xs hover:text-indigo-600"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-black text-slate-300 uppercase mb-4">
+                        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                    </div>
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-y-2 justify-items-center text-slate-600"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================== STUDENTS VIEW ======================== -->
+        <div id="view-students" class="hidden">
+            <header class="flex justify-between items-start mb-12">
+                <div>
+                    <h2 class="text-5xl font-black text-slate-800 tracking-tighter mb-2">Student Attendance Details</h2>
+                    <p id="students-date-header" class="text-indigo-600 font-extrabold text-sm uppercase tracking-widest"></p>
+                </div>
+                <div class="flex gap-6">
+                    <div class="stat-circle bg-white text-emerald-500 border border-slate-50">
+                        <span class="text-[10px] font-black uppercase tracking-tighter">Present</span>
+                        <span id="p-count" class="text-2xl font-black">0</span>
+                    </div>
+                    <div class="stat-circle bg-white text-rose-500 border border-slate-50">
+                        <span class="text-[10px] font-black uppercase tracking-tighter">Absent</span>
+                        <span id="a-count" class="text-2xl font-black tabular-nums">0</span>
+                    </div>
+                    <div class="stat-circle bg-indigo-600 text-white shadow-indigo-200">
+                        <span class="text-[10px] font-black uppercase tracking-tighter">Percent</span>
+                        <span id="rate-percent" class="text-2xl font-black">0%</span>
+                    </div>
+                </div>
+            </header>
+            <div class="glass-card p-10">
+                <div class="flex justify-between items-center mb-10 border-b border-slate-50 pb-6">
+                    <h3 class="text-5xl font-black italic text-slate-800">Student Roll & Status</h3>
+                    <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">Manual Overrides Allowed</span>
+                </div>
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="text-[13px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-50">
+                            <th class="pb-6">Roll No</th>
+                            <th class="pb-6">Student Name</th>
+                            <th class="pb-6">Contact</th>
+                            <th class="pb-6">Status</th>
+                            <th class="pb-6">Manual Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendance-list-body" class="text-slate-900 font-bold"></tbody>
+                </table>
+            </div>
+            <button onclick="saveAttendanceChanges()" class="mt-6 w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">
+                Save Changes
+            </button>
+        </div>
+
+        <!-- ======================== CONSOLE VIEW ======================== -->
+        <div id="view-console" class="hidden">
+            <header class="mb-10">
+                <h2 class="text-5xl font-black text-slate-800 tracking-tighter mb-2">Attendance Console</h2>
+                <p id="console-date-header" class="text-indigo-600 font-extrabold text-sm uppercase tracking-widest"></p>
+            </header>
+            <div class="glass-card p-8">
+                <div class="flex items-center gap-3 text-indigo-600 font-black text-xs mb-6 uppercase tracking-wider">
+                    <i class="fas fa-camera"></i> Smart Scan
+                </div>
+                <div class="scan-area mb-8" id="video-container">
+                    <video id="webcam" autoplay playsinline class="w-full h-full object-cover hidden"></video>
+                    <canvas id="captureCanvas" class="hidden"></canvas>
+                    <div id="scan-placeholder" class="text-center text-blue-500 font-bold text-sm">
+                        <i class="fas fa-camera text-2xl mb-2"></i>
+                        <p>Camera preview will appear here</p>
+                    </div>
+                    <div id="image-preview-wrapper" class="hidden w-full h-full">
+                        <img id="preview-img" src="#" class="w-full h-full object-cover rounded-2xl" />
+                    </div>
+                </div>
+                <div class="flex gap-4 max-w-lg mx-auto mb-4">
+                    <button onclick="startAutoCamera()" class="flex-1 bg-slate-800 text-white py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-slate-700 transition-colors">
+                        Live Camera
+                    </button>
+                    <label class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-center cursor-pointer hover:bg-blue-500 shadow-lg shadow-blue-100 transition-colors">
+                        Upload File
+                        <input type="file" id="imageInput" class="hidden" accept="image/*" onchange="previewImage(event)">
+                    </label>
+                </div>
+                <button onclick="processAttendance()" class="w-full bg-[#5d58f0] text-white py-5 rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 active:scale-95 transition-transform mb-3">
+                    Process Attendance <i class="fas fa-bolt ml-1"></i>
+                </button>
+                <button onclick="switchView('reports'); generateReport();" class="w-full bg-green-600 text-white py-5 rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl mb-3">
+                    Generate Report
+                </button>
+                <div id="result"></div>
+            </div>
+        </div>
+
+        <!-- ======================== REPORTS VIEW ======================== -->
+        <div id="view-reports" class="hidden">
+            <header class="mb-10">
+                <h2 class="text-5xl font-black text-slate-800 tracking-tighter mb-2">Attendance Report</h2>
+                <p id="reports-date-header" class="text-indigo-600 font-extrabold text-sm uppercase tracking-widest"></p>
+            </header>
+            <div class="grid grid-cols-2 gap-8 mb-10">
+                <div class="bg-green-500 p-6 rounded-3xl flex justify-center items-center">
+                    <div class="progress-circle">
+                        <svg class="progress-ring" width="140" height="140">
+                            <circle class="bg" cx="70" cy="70" r="60"></circle>
+                            <circle class="progress" id="present-ring" cx="70" cy="70" r="60"></circle>
+                        </svg>
+                        <div class="progress-text">
+                            <span id="present-percent">0%</span>
+                            <p>Present</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-red-500 p-6 rounded-3xl flex justify-center items-center">
+                    <div class="progress-circle">
+                        <svg class="progress-ring" width="140" height="140">
+                            <circle class="bg" cx="70" cy="70" r="60"></circle>
+                            <circle class="progress" id="absent-ring" cx="70" cy="70" r="60"></circle>
+                        </svg>
+                        <div class="progress-text">
+                            <span id="absent-percent">0%</span>
+                            <p>Absent</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="glass-card p-8 mb-8">
+                <h3 class="text-xl font-black mb-6">Absentees List</h3>
+                <table class="w-full text-left">
+                    <thead class="text-xs text-slate-400 uppercase font-black">
+                        <tr>
+                            <th class="py-3">S.No</th>
+                            <th>Name</th>
+                            <th>Roll No</th>
+                            <th>Department</th>
+                            <th>Phone Number</th>
+                        </tr>
+                    </thead>
+                    <tbody id="absentees-body" class="font-semibold text-slate-700"></tbody>
+                </table>
+            </div>
+            <button id="download-btn" onclick="downloadReport()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg">
+                Download Report
+            </button>
+        </div>
+
+    </main>
+
+    <script>
+        // =====================
+        // GLOBAL STATE
+        // =====================
+        let students = [];
+        let cameraStream = null;
+        let selectedDate = new Date();
+
+        const timetable = [{
+            hour: "01",
+            start: "09:00",
+            end: "10:00",
+            label: "FN"
+        }, {
+            hour: "02",
+            start: "10:00",
+            end: "10:50",
+            label: "FN"
+        }, {
+            hour: "03",
+            start: "11:10",
+            end: "12:00",
+            label: "FN"
+        }, {
+            hour: "04",
+            start: "12:00",
+            end: "12:50",
+            label: "FN"
+        }, {
+            hour: "05",
+            start: "13:50",
+            end: "14:40",
+            label: "AN"
+        }, {
+            hour: "06",
+            start: "14:40",
+            end: "15:30",
+            label: "AN"
+        }, {
+            hour: "07",
+            start: "15:40",
+            end: "16:30",
+            label: "AN"
+        }];
+
+        // =====================
+        // CLOCK
+        // =====================
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('live-clock').innerText =
+                now.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                });
+            document.getElementById('live-date').innerText =
+                now.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric'
+                });
+        }
+
+        // =====================
+        // FIX 1: FACULTY NAME — fetch from /get-faculty-name on page load
+        // Falls back to a safe default if the endpoint isn't available yet.
+        // =====================
+        function fetchFacultyName() {
+            const hour = new Date().getHours();
+            const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+            const greetEl = document.getElementById("greeting-text");
+            if (!greetEl) return;
+
+            // Try the Flask endpoint; gracefully fall back if it fails
+            fetch('/get-faculty-name')
+                .then(res => {
+                    if (!res.ok) throw new Error("No endpoint");
+                    return res.json();
+                })
+                .then(data => {
+                    // Endpoint should return { name: "Dr. Ramesh Kumar" }
+                    const name = (data && data.name) ? data.name : "Professor";
+                    greetEl.innerText = `${greeting}, ${name}`;
+                })
+                .catch(() => {
+                    // Fallback: try to read from a meta tag Jinja can inject:
+                    // <meta name="faculty-name" content="{{ faculty_name }}">
+                    const meta = document.querySelector('meta[name="faculty-name"]');
+                    const name = (meta && meta.content && meta.content !== "{{ faculty_name }}") ?
+                        meta.content :
+                        "Professor";
+                    greetEl.innerText = `${greeting}, ${name}`;
+                });
+        }
+
+        // =====================
+        // LOGOUT
+        // =====================
+        function logout() {
+            window.location.href = "/logout";
+        }
+
+        // =====================
+        // NAVIGATION
+        // =====================
+        function switchView(viewName) {
+            ['dashboard', 'students', 'console', 'reports'].forEach(v => {
+                document.getElementById('view-' + v).classList.add('hidden');
+                document.getElementById('nav-' + v).classList.remove('active', 'text-indigo-600');
+            });
+            document.getElementById('view-' + viewName).classList.remove('hidden');
+            document.getElementById('nav-' + viewName).classList.add('active');
+
+            if (viewName === 'students') renderAttendanceList();
+            updateConsoleDate();
+        }
+
+
+        // =====================
+        function getSessionFromSubject() {
+            const rawTime = sessionStorage.getItem("selectedStartTime");
+
+            // Guard: nothing selected yet
+            if (!rawTime || rawTime === "undefined" || rawTime === "null" || rawTime === "null") {
+                return null; // caller handles null
+            }
+
+
+            const startTime = rawTime.substring(0, 5);
+
+            const toMin = t => {
+                const parts = t.split(":");
+                return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+            };
+
+            const cur = toMin(startTime);
+
+            for (const slot of timetable) {
+                if (cur >= toMin(slot.start) && cur < toMin(slot.end)) {
+                    return {
+                        hour: slot.hour,
+                        label: slot.label
+                    };
+                }
+            }
+
+            // Time is set but doesn't match any slot — show the raw time instead of "—"
+            return {
+                hour: startTime,
+                label: "Custom"
+            };
+        }
+
+        // =====================
+        // UPDATE HEADER DATES
+        // =====================
+        function updateConsoleDate() {
+            let dateObj = new Date();
+            try {
+                const stored = sessionStorage.getItem("selectedDate");
+                if (stored) dateObj = new Date(stored);
+            } catch (e) {}
+
+            const formattedDate = dateObj.toLocaleDateString('en-US', {
+                weekday: 'long',
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            });
+
+            // FIX: only append hour info when a subject has been chosen
+            const session = getSessionFromSubject();
+            const hourPart = session ? ` • Hour: ${session.hour} (${session.label})` : "";
+            const fullText = formattedDate + hourPart;
+
+            const consoleHeader = document.getElementById('console-date-header');
+            if (consoleHeader) consoleHeader.innerText = fullText;
+
+            const studentsHeader = document.getElementById('students-date-header');
+            if (studentsHeader) studentsHeader.innerText = fullText;
+
+            const subjectName = sessionStorage.getItem("selectedSubjectName");
+            const reportsHeader = document.getElementById('reports-date-header');
+            if (reportsHeader) {
+                reportsHeader.innerText = formattedDate +
+                    (session ? ` • Hour: ${session.hour} (${session.label})` : "") +
+                    (subjectName ? ` • Subject: ${subjectName}` : "");
+            }
+        }
+
+        // =====================
+        // LOAD STUDENTS FROM DB
+        // =====================
+        function loadStudentsForSubject(subjectId) {
+            if (!subjectId || subjectId === "undefined") return;
+
+            const selectedDateStr = sessionStorage.getItem("selectedDate");
+            const cleanDate = selectedDateStr ?
+                new Date(selectedDateStr).toISOString().split("T")[0] :
+                new Date().toISOString().split("T")[0];
+
+            fetch('/get-students', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        subject_id: subjectId,
+                        date: cleanDate
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.students) {
+                        students = data.students.map(s => ({
+                            roll: s.roll_no || s.student_id,
+                            name: s.name,
+                            contact: s.phone_No || s.phone || '-',
+                            department: s.department || '-',
+                            status: s.status || 'ABSENT',
+                            reason: ''
+                        }));
+                        sessionStorage.setItem("studentsData", JSON.stringify(students));
+                    }
+                })
+                .catch(err => console.error("Error loading students:", err));
+        }
+
+        // =====================
+        // RENDER TABLE
+        // =====================
+        function renderAttendanceList() {
+            const body = document.getElementById('attendance-list-body');
+            const saved = sessionStorage.getItem("studentsData");
+            if (saved) students = JSON.parse(saved);
+
+            if (!students || students.length === 0) {
+                body.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-slate-400 font-bold">
+                    No students loaded. Please process attendance first.</td></tr>`;
+                document.getElementById('p-count').innerText = '0';
+                document.getElementById('a-count').innerText = '0';
+                document.getElementById('rate-percent').innerText = '0%';
+                return;
+            }
+
+            let p = 0;
+            body.innerHTML = students.map((s, idx) => {
+                if (s.status === 'PRESENT') p++;
+                return `
+                <tr class="border-b border-slate-50">
+                    <td class="py-6 text-slate-800 font-bold">${s.roll}</td>
+                    <td class="py-6 text-slate-600 font-semibold">${s.name}</td>
+                    <td class="py-6 text-blue-500 font-semibold">${s.contact}</td>
+                    <td class="py-6">
+                        <select onchange="updateStudentStatus(${idx}, this.value)"
+                            class="status-badge ${s.status === 'PRESENT' ? 'status-present' : 'status-absent'} cursor-pointer">
+                            <option value="PRESENT" ${s.status === 'PRESENT' ? 'selected' : ''}>Present</option>
+                            <option value="ABSENT"  ${s.status === 'ABSENT'  ? 'selected' : ''}>Absent</option>
+                        </select>
+                    </td>
+                    <td class="py-6">
+                        <input type="text" placeholder="Reason (Sick/Late/OD)"
+                            value="${s.reason || ''}"
+                            onblur="students[${idx}].reason = this.value; sessionStorage.setItem('studentsData', JSON.stringify(students));"
+                            class="w-full bg-slate-50 rounded-xl px-4 py-2 text-[11px] placeholder-slate-300 border border-slate-100 focus:ring-1 focus:ring-indigo-100 outline-none">
+                    </td>
+                </tr>`;
+            }).join('');
+
+            const total = students.length;
+            document.getElementById('p-count').innerText = p;
+            document.getElementById('a-count').innerText = total - p;
+            document.getElementById('rate-percent').innerText =
+                total > 0 ? Math.round((p / total) * 100) + '%' : '0%';
+        }
+
+        function updateStudentStatus(i, val) {
+            students[i].status = val;
+            sessionStorage.setItem("studentsData", JSON.stringify(students));
+            renderAttendanceList();
+        }
+
+        // =====================
+        // SUBJECT SELECTION
+        // FIX: store startTime exactly as returned from server, no trimming here —
+        //      getSessionFromSubject() now handles the seconds trim itself.
+        // =====================
+        function goToAttendance(subjectId, subjectName, startTime) {
+            sessionStorage.setItem("selectedSubjectId", subjectId);
+            sessionStorage.setItem("selectedSubjectName", subjectName);
+            sessionStorage.setItem("selectedStartTime", startTime); // e.g. "09:00" or "09:00:00"
+            sessionStorage.setItem("selectedDate", selectedDate.toISOString());
+
+            loadStudentsForSubject(subjectId);
+            switchView('console');
+            document.querySelector("#view-console h2").innerText = subjectName + " — Attendance";
+            updateConsoleDate(); // now reflects the chosen hour immediately
+        }
+
+        function getTodayIST() {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        }
+        // =====================
+        // PROCESS ATTENDANCE
+        // =====================
+        async function processAttendance() {
+            const subjectId = sessionStorage.getItem("selectedSubjectId");
+            if (!subjectId) {
+                alert("Select a subject first");
+                return;
+            }
+
+            let imageFile;
+            const fileInput = document.getElementById("imageInput");
+            const video = document.getElementById("webcam");
+
+            if (fileInput.files.length > 0) {
+                imageFile = fileInput.files[0];
+            } else if (video.srcObject && video.videoWidth > 0) {
+                const canvas = document.createElement("canvas");
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext("2d").drawImage(video, 0, 0);
+                imageFile = await new Promise(resolve => {
+                    canvas.toBlob(blob => resolve(new File([blob], "capture.jpg", {
+                        type: "image/jpeg"
+                    })));
+                });
+            } else {
+                alert("Please upload an image or start the live camera first.");
+                return;
+            }
+
+            const selectedDateStr = sessionStorage.getItem("selectedDate");
+
+            const cleanDate = getTodayIST();
+            const formData = new FormData();
+            formData.append("image", imageFile);
+            formData.append("subject_id", subjectId);
+            formData.append("date", cleanDate);
+
+            const resultBox = document.getElementById("result");
+            resultBox.innerHTML = `<div class="mt-4 p-4 bg-blue-50 rounded-xl text-blue-700 font-bold">⏳ Processing attendance...</div>`;
+
+            try {
+                const res = await fetch('/process_attendance', {
+                    method: "POST",
+                    body: formData,
+                    credentials: "include"
+                });
+                const text = await res.text();
+
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    console.error("❌ Server returned HTML instead of JSON:");
+                    console.log(text); // <-- THIS WILL SHOW REAL ERROR
+                    throw new Error("Invalid JSON response");
+                }
+
+                if (!res.ok) {
+                    throw new Error(data.error || "Server error");
+                }
+
+                students = [
+                    ...data.present.map(s => ({
+                        roll: s.student_id,
+                        name: s.name,
+                        contact: s.phone || '-',
+                        department: s.department || '-',
+                        status: 'PRESENT',
+                        reason: ''
+                    })),
+                    ...data.absent.map(s => ({
+                        roll: s.student_id,
+                        name: s.name,
+                        contact: s.phone || '-',
+                        department: s.department || '-',
+                        status: 'ABSENT',
+                        reason: ''
+                    }))
+                ];
+                sessionStorage.setItem("studentsData", JSON.stringify(students));
+
+                resultBox.innerHTML = `
+                    <div class="mt-4 p-4 bg-green-50 rounded-xl">
+                        <p class="font-bold text-green-700">Present: ${data.present.length}</p>
+                        <p class="font-bold text-red-700 mt-2"> Absent: ${data.absent.length}</p>
+                        <p class="text-xs text-slate-400 mt-1">Date: ${data.date}</p>
+                    </div>`;
+            } catch (err) {
+                console.error(err);
+                resultBox.innerHTML = `<p class="mt-4 text-red-600 font-bold">❌ ${err.message}</p>`;
+            }
+        }
+
+
+
+        function saveAttendanceChanges() {
+            sessionStorage.setItem("studentsData", JSON.stringify(students));
+            updateAbsenteesAfterSave();
+            alert("Changes saved successfully!");
+        }
+
+        function updateAbsenteesAfterSave() {
+            const absentees = students.filter(s => s.status === 'ABSENT');
+            document.getElementById("absentees-body").innerHTML = absentees.map((s, i) => `
+                <tr>
+                    <td class="py-2">${i + 1}</td>
+                    <td>${s.name}</td>
+                    <td>${s.roll}</td>
+                    <td>${s.department}</td>
+                    <td>${s.contact}</td>
+                </tr>`).join('');
+
+            const total = students.length;
+            const present = students.filter(s => s.status === 'PRESENT').length;
+            const presentPercent = total ? Math.round((present / total) * 100) : 0;
+            document.getElementById("present-percent").innerText = presentPercent + "%";
+            document.getElementById("absent-percent").innerText = (100 - presentPercent) + "%";
+        }
+
+
+        function generateReport() {
+            const subjectId = sessionStorage.getItem("selectedSubjectId");
+            const saved = sessionStorage.getItem("studentsData");
+            if (saved) students = JSON.parse(saved);
+
+            if (students.length === 0 && subjectId) {
+                fetch('/get-students', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            subject_id: subjectId
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.students) {
+                            students = data.students.map(s => ({
+                                roll: s.roll_no || s.student_id,
+                                name: s.name,
+                                contact: s.phone_No || s.phone || '-',
+                                department: s.department || '-',
+                                status: s.status || 'ABSENT',
+                                reason: ''
+                            }));
+                            sessionStorage.setItem("studentsData", JSON.stringify(students));
+                            renderReport();
+                        }
+                    });
+            } else {
+                renderReport();
+            }
+        }
+
+        function renderReport() {
+            const total = students.length;
+            if (total === 0) {
+                document.getElementById("present-percent").innerText = "0%";
+                document.getElementById("absent-percent").innerText = "0%";
+                document.getElementById("absentees-body").innerHTML = "";
+                return;
+            }
+
+            const present = students.filter(s => s.status === 'PRESENT').length;
+            const absentList = students.filter(s => s.status === 'ABSENT');
+            const presentPercent = Math.round((present / total) * 100);
+            const absentPercent = 100 - presentPercent;
+
+            const radius = 60;
+            const circumference = 2 * Math.PI * radius;
+            document.getElementById("present-ring").style.strokeDashoffset =
+                circumference - (presentPercent / 100) * circumference;
+            document.getElementById("absent-ring").style.strokeDashoffset =
+                circumference - (absentPercent / 100) * circumference;
+
+            document.getElementById("present-percent").innerText = presentPercent + "%";
+            document.getElementById("absent-percent").innerText = absentPercent + "%";
+
+            document.getElementById("absentees-body").innerHTML = absentList.map((s, i) => `
+                <tr>
+                    <td class="py-2">${i + 1}</td>
+                    <td>${s.name}</td>
+                    <td>${s.roll}</td>
+                    <td>${s.department}</td>
+                    <td>${s.contact}</td>
+                </tr>`).join('');
+        }
+
+
+        function downloadReport() {
+            const subjectName = sessionStorage.getItem("selectedSubjectName") || "Subject";
+            let report = `ATTENDANCE REPORT\n`;
+            report += `Date: ${new Date().toLocaleDateString()}\n`;
+            report += `Subject: ${subjectName}\n\n`;
+            report += `${'Roll No'.padEnd(15)} ${'Name'.padEnd(25)} Status\n`;
+            report += '-'.repeat(55) + '\n';
+            students.forEach(s => {
+                report += `${String(s.roll).padEnd(15)} ${s.name.padEnd(25)} ${s.status}\n`;
+            });
+            const present = students.filter(s => s.status === 'PRESENT').length;
+            report += `\nTotal: ${students.length} | Present: ${present} | Absent: ${students.length - present}`;
+            report += `\nAttendance Rate: ${students.length > 0 ? Math.round((present / students.length) * 100) : 0}%`;
+
+            const blob = new Blob([report], {
+                type: "text/plain"
+            });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `attendance_${subjectName}_${new Date().toISOString().slice(0, 10)}.txt`;
+            link.click();
+
+            const btn = document.getElementById("download-btn");
+            btn.innerText = "Downloaded Successfully";
+            btn.classList.replace("bg-blue-600", "bg-green-600");
+        }
+
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(t => t.stop());
+                cameraStream = null;
+            }
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                document.getElementById("webcam").classList.add("hidden");
+                document.getElementById("scan-placeholder").style.display = "none";
+                const wrapper = document.getElementById("image-preview-wrapper");
+                document.getElementById("preview-img").src = e.target.result;
+                wrapper.classList.remove("hidden");
+                document.getElementById("video-container").classList.add("scan-stopped");
+            };
+            reader.readAsDataURL(file);
+        }
+
+
+        async function startAutoCamera() {
+            const video = document.getElementById('webcam');
+            const placeholder = document.getElementById('scan-placeholder');
+            const container = document.getElementById("video-container");
+
+            document.getElementById("image-preview-wrapper").classList.add("hidden");
+            container.classList.remove("scan-stopped");
+
+            try {
+                if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: false
+                });
+                video.srcObject = cameraStream;
+                video.onloadedmetadata = () => video.play();
+                video.classList.remove('hidden');
+                placeholder.style.display = "none";
+                setTimeout(() => captureAndSend(), 1000);
+            } catch (err) {
+                console.error(err);
+                alert("Camera not accessible. Please check permissions.");
+            }
+        }
+
+
+        async function captureAndSend() {
+            const video = document.getElementById('webcam');
+            const subjectId = sessionStorage.getItem("selectedSubjectId");
+
+            if (!subjectId || subjectId === "undefined") {
+                alert("Please select a subject first.");
+                return;
+            }
+
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext("2d").drawImage(video, 0, 0);
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg"));
+
+            const selectedDateStr = sessionStorage.getItem("selectedDate");
+
+            const cleanDate = getTodayIST();
+
+            const formData = new FormData();
+            formData.append("image", blob, "capture.jpg");
+            formData.append("subject_id", subjectId);
+            formData.append("date", cleanDate);
+
+            const resultBox = document.getElementById("result");
+            resultBox.innerHTML = `<div class="mt-4 p-4 bg-blue-50 rounded-xl text-blue-700 font-bold">⏳ Processing...</div>`;
+
+            try {
+                const res = await fetch("/process_attendance", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || "Error");
+
+                students = [
+                    ...data.present.map(s => ({
+                        roll: s.student_id,
+                        name: s.name,
+                        contact: s.phone || '-',
+                        department: s.department || '-',
+                        status: 'PRESENT',
+                        reason: ''
+                    })),
+                    ...data.absent.map(s => ({
+                        roll: s.student_id,
+                        name: s.name,
+                        contact: s.phone || '-',
+                        department: s.department || '-',
+                        status: 'ABSENT',
+                        reason: ''
+                    }))
+                ];
+                sessionStorage.setItem("studentsData", JSON.stringify(students));
+
+                const container = document.getElementById("video-container");
+                container.classList.add("scan-stopped");
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(t => t.stop());
+                    cameraStream = null;
+                }
+
+                document.getElementById("webcam").classList.add("hidden");
+                document.getElementById("scan-placeholder").style.display = "none";
+                const wrapper = document.getElementById("image-preview-wrapper");
+                document.getElementById("preview-img").src = URL.createObjectURL(blob);
+                wrapper.classList.remove("hidden");
+                const img = wrapper.querySelector("img");
+                if (img) img.classList.add("image-success");
+
+                resultBox.innerHTML = `
+                    <div class="mt-4 p-4 bg-green-50 rounded-xl">
+                        <p class="font-bold text-green-700">✅ Present: ${data.present.length}</p>
+                        <p class="font-bold text-red-700 mt-2">❌ Absent: ${data.absent.length}</p>
+                        <p class="text-xs text-slate-400 mt-1">Date recorded: ${data.date}</p>
+                    </div>`;
+            } catch (err) {
+                console.error(err);
+                resultBox.innerHTML = `<p class="mt-4 text-red-600 font-bold">❌ ${err.message}</p>`;
+            }
+        }
+
+
+        function generateCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const today = now.getDate();
+            const firstDay = new Date(year, month, 1).getDay();
+            const totalDays = new Date(year, month + 1, 0).getDate();
+
+            let html = '';
+            for (let i = 0; i < firstDay; i++)
+                html += `<div class="calendar-day other-month"></div>`;
+
+            for (let day = 1; day <= totalDays; day++) {
+                const isToday = day === today;
+                const isSelected = selectedDate.getDate() === day && selectedDate.getMonth() === month;
+                html += `<div class="calendar-day ${isToday ? 'active' : ''} ${isSelected ? 'selected' : ''}"
+                              onclick="selectDate(${day})">${day}</div>`;
+            }
+            grid.innerHTML = html;
+        }
+
+        function selectDate(day) {
+            const now = new Date();
+            selectedDate = new Date(now.getFullYear(), now.getMonth(), day);
+            const dayName = selectedDate.toLocaleDateString('en-US', {
+                weekday: 'long'
+            });
+            document.getElementById("day").value = dayName;
+            sessionStorage.setItem("selectedDay", dayName);
+            sessionStorage.setItem("selectedDate", selectedDate.toISOString());
+            generateCalendar();
+            updateConsoleDate();
+            autoloadSubjects();
+        }
+
+
+        function autoloadSubjects() {
+            const courseEl = document.querySelector('input[name="course"]:checked');
+            const year = document.getElementById("year").value;
+            const sem = document.getElementById("semester").value;
+            const day = document.getElementById('day').value;
+            const selectedDateStr = sessionStorage.getItem("selectedDate");
+
+            if (!courseEl || !year || !sem || !day) return;
+
+            fetch('/get-subjects', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        course: courseEl.value,
+                        year,
+                        semester: sem,
+                        day,
+                        date: selectedDateStr
+                    })
+                })
+                .then(res => res.json())
+                .then(data => renderSubjects(data.subjects))
+                .catch(err => console.error("Error fetching subjects:", err));
+        }
+
+        function renderSubjects(subjects) {
+            const container = document.getElementById("subject-list");
+            if (!subjects || subjects.length === 0) {
+                container.innerHTML = "<p class='text-gray-500 col-span-2'>No subjects found for this selection.</p>";
+                return;
+            }
+            container.innerHTML = subjects.map(sub => `
+                <div class="bg-white p-6 rounded-2xl shadow-md border hover:shadow-xl transition-all flex flex-col justify-between">
+                    <div>
+                        <p class="text-xs text-gray-400 font-bold">${sub.subject_code}</p>
+                        <h3 class="text-xl font-black text-gray-800">${sub.subject_name}</h3>
+                        <p class="text-sm text-gray-500 mt-2">⏰ ${formatTime(sub.start_time)} - ${formatTime(sub.end_time)}</p>
+                    </div>
+                    <button onclick="goToAttendance('${sub.subject_id}', '${sub.subject_name}', '${sub.start_time}')"
+                        class="mt-6 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold">
+                        Mark Attendance
+                    </button>
+                </div>`).join('');
+        }
+
+        function formatTime(time) {
+            if (!time) return "N/A";
+            return new Date("1970-01-01T" + time)
+                .toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
+        }
+
+
+        setInterval(updateClock, 1000);
+        updateClock();
+        generateCalendar();
+        fetchFacultyName();
+        updateConsoleDate();
+    </script>
+</body>
+
+</html>
